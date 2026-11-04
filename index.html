@@ -584,6 +584,7 @@ $('pdfBtn').onclick = async () => {
   const pageW = 210, pageH = 297, margin = 15;
   let y = margin;
 
+  // Helpers (usan SOLO caracteres ASCII para evitar problemas con Helvetica)
   const addPageIfNeeded = (h) => {
     if (y + h > pageH - margin) { doc.addPage(); y = margin; }
   };
@@ -604,44 +605,59 @@ $('pdfBtn').onclick = async () => {
     y += 2;
   };
 
-  // PORTADA
+  // Función auxiliar para limpiar strings de caracteres no-ASCII
+  const ascii = (s) => String(s)
+    .replace(/−/g, '-')   // signo menos tipográfico
+    .replace(/×/g, 'x')   // por
+    .replace(/·/g, '-')   // punto medio
+    .replace(/→/g, '->')
+    .replace(/≈/g, '~')
+    .replace(/✔/g, 'SI')
+    .replace(/✘/g, 'NO');
+
+  // ===== PORTADA =====
   doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, 42, 'F');
+  doc.rect(0, 0, pageW, 50, 'F');
   doc.setTextColor(56,189,248);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('Informe TP N° 17', margin, 20);
+  doc.text('Informe TP N 17', margin, 18);
   doc.setFontSize(12);
   doc.setTextColor(226,232,240);
-  doc.text('Laboratorio de Matrices — Pixel Art', margin, 28);
+  doc.text('Laboratorio de Matrices - Pixel Art', margin, 26);
   doc.setFontSize(10);
+  doc.setTextColor(167,139,250);
+  doc.text('Asignatura: Logica Matematica', margin, 34);
+  doc.text('Curso: 4to C', margin, 40);
+  doc.text('Colegio: IPETYM 246 Amadeo Sabattini', margin, 46);
   doc.setTextColor(253,186,116);
-  doc.text('Fecha de entrega: ' + FECHA_ENTREGA, margin, 36);
+  doc.setFontSize(10);
+  doc.text('Fecha de entrega: ' + FECHA_ENTREGA, margin, 60);
   doc.setTextColor(30,30,30);
-  y = 52;
+  y = 70;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
-  doc.text(`Estudiante: ${nombre}`, margin, y); y += 7;
-  doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-AR')}`, margin, y); y += 7;
-  doc.text(`Matrices cargadas: ${state.matrices.length}`, margin, y); y += 7;
-  doc.text(`Operaciones realizadas: ${state.operaciones.length}`, margin, y); y += 12;
+  doc.text('Estudiante: ' + ascii(nombre), margin, y); y += 7;
+  doc.text('Fecha de generacion: ' + new Date().toLocaleDateString('es-AR'), margin, y); y += 7;
+  doc.text('Matrices cargadas: ' + state.matrices.length, margin, y); y += 7;
+  doc.text('Operaciones realizadas: ' + state.operaciones.length, margin, y); y += 12;
 
-  // 1. IMÁGENES AMPLIADAS
-  titulo('1. Imágenes cargadas (ampliadas)', 14);
+  // ===== 1. IMAGENES AMPLIADAS =====
+  titulo('1. Imagenes cargadas (ampliadas)', 14);
   const imgSize = 70;
   state.matrices.forEach((m, i) => {
     addPageIfNeeded(imgSize + 20);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text(`${i+1}. ${m.name} (${m.size}×${m.size})`, margin, y);
+    doc.text((i+1) + '. ' + ascii(m.name) + ' (' + m.size + 'x' + m.size + ')', margin, y);
     y += 3;
     try { doc.addImage(m.url, 'PNG', margin, y, imgSize, imgSize, undefined, 'FAST'); } catch(e){}
     y += imgSize + 6;
   });
 
-  // 2. MATRICES NUMÉRICAS
-  titulo('2. Matrices de cada imagen (grises 0–255)', 14);
+  // ===== 2. MATRICES NUMERICAS =====
+  titulo('2. Matrices de cada imagen (grises 0-255)', 14);
   state.matrices.forEach((m, i) => {
     const n = m.size;
     const cellW = Math.min(7, (pageW - 2*margin - 10) / n);
@@ -650,7 +666,7 @@ $('pdfBtn').onclick = async () => {
     addPageIfNeeded(totalH);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text(`Matriz ${i+1}: ${m.name} (${n}×${n})`, margin, y);
+    doc.text('Matriz ' + (i+1) + ': ' + ascii(m.name) + ' (' + n + 'x' + n + ')', margin, y);
     y += 4;
     doc.setFontSize(Math.max(4, cellW * 0.6));
     for (let r = 0; r < n; r++) {
@@ -667,7 +683,7 @@ $('pdfBtn').onclick = async () => {
     y += n * cellH + 8;
   });
 
-  // 3. OPERACIONES
+  // ===== 3. OPERACIONES =====
   titulo('3. Operaciones realizadas y resultados', 14);
   if (!state.operaciones.length) {
     parrafo('No se registraron operaciones.');
@@ -676,16 +692,17 @@ $('pdfBtn').onclick = async () => {
       addPageIfNeeded(30);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text(`Operación ${i+1}: ${op.titulo}`, margin, y);
+      // Limpiar titulo y detalle para que no aparezcan comillas
+      doc.text('Operacion ' + (i+1) + ': ' + ascii(op.titulo), margin, y);
       y += 5;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.text(`Detalle: ${op.detalle}`, margin, y);
+      doc.text('Detalle: ' + ascii(op.detalle), margin, y);
       y += 6;
 
       if (op.error) {
         doc.setTextColor(200,0,0);
-        doc.text('Error: ' + op.error, margin, y);
+        doc.text('Error: ' + ascii(op.error), margin, y);
         doc.setTextColor(30,30,30);
         y += 6;
       } else if (op.data) {
@@ -697,11 +714,11 @@ $('pdfBtn').onclick = async () => {
           doc.addImage(op.imgUrl, 'PNG', margin, y, imgOpSize, imgOpSize, undefined, 'FAST');
           doc.setFontSize(7);
           doc.setTextColor(120,120,120);
-          doc.text(`Imagen del resultado (${n}×${mm})`, margin, y + imgOpSize + 3);
+          doc.text('Imagen del resultado (' + n + 'x' + mm + ')', margin, y + imgOpSize + 3);
           doc.setTextColor(30,30,30);
         } catch(e){}
 
-        // --- MATRIZ NUMÉRICA AL LADO ---
+        // --- MATRIZ NUMERICA AL LADO ---
         const cellW = Math.min(5, (pageW - 2*margin - imgOpSize - 10) / mm);
         const cellH = cellW;
         doc.setFontSize(Math.max(3.5, cellW * 0.6));
@@ -728,13 +745,13 @@ $('pdfBtn').onclick = async () => {
     });
   }
 
-  // 4. INFORMES DE CLASIFICACIÓN
-  titulo('4. Informes de clasificación de cada imagen', 14);
+  // ===== 4. INFORMES DE CLASIFICACION =====
+  titulo('4. Informes de clasificacion de cada imagen', 14);
   state.matrices.forEach((m, i) => {
     addPageIfNeeded(40);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text(`Imagen ${i+1}: ${m.name} (${m.size}×${m.size})`, margin, y);
+    doc.text('Imagen ' + (i+1) + ': ' + ascii(m.name) + ' (' + m.size + 'x' + m.size + ')', margin, y);
     y += 5;
     const checks = [
       ['Cuadrada', isSquare(m.data)],
@@ -743,70 +760,69 @@ $('pdfBtn').onclick = async () => {
       ['Diagonal', isDiagonal(m.data)],
       ['Triangular superior', isUpperTriangular(m.data)],
       ['Triangular inferior', isLowerTriangular(m.data)],
-      ['Simétrica', isSymmetric(m.data)]
+      ['Simetrica', isSymmetric(m.data)]
     ];
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     checks.forEach(([n, ok]) => {
       doc.setTextColor(ok ? 0 : 150, ok ? 130 : 0, 0);
-      doc.text(`• ${n}: ${ok ? 'SI' : 'NO'}`, margin + 4, y);
+      doc.text('- ' + n + ': ' + (ok ? 'SI' : 'NO'), margin + 4, y);
       doc.setTextColor(30,30,30);
       y += 4.5;
     });
     y += 3;
   });
 
-  // 5. DESAFÍOS
-  titulo('5. Desafíos creativos', 14);
+  // ===== 5. DESAFIOS =====
+  titulo('5. Desafios creativos', 14);
 
   addPageIfNeeded(30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('Desafío A — Matriz Diagonal', margin, y); y += 6;
+  doc.text('Desafio A - Matriz Diagonal', margin, y); y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  parrafo('Definición: matriz cuadrada con todos los elementos fuera de la diagonal principal iguales a cero.', 9);
+  parrafo('Definicion: matriz cuadrada con todos los elementos fuera de la diagonal principal iguales a cero.', 9);
   if (state.diag) {
     try { doc.addImage(state.diag.url, 'PNG', margin, y, 40, 40, undefined, 'FAST'); } catch(e){}
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(state.diag.ok ? 0 : 200, state.diag.ok ? 130 : 0, 0);
-    doc.text(state.diag.ok ? 'Verificación: ES diagonal' : 'Verificación: NO es diagonal', margin + 45, y + 10);
+    doc.text(state.diag.ok ? 'Verificacion: ES diagonal' : 'Verificacion: NO es diagonal', margin + 45, y + 10);
     doc.setTextColor(30,30,30);
     y += 45;
   } else {
-    parrafo('No se cargó imagen para este desafío.', 9);
+    parrafo('No se cargo imagen para este desafio.', 9);
   }
 
   addPageIfNeeded(30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('Desafío B — Matriz Triangular Superior', margin, y); y += 6;
+  doc.text('Desafio B - Matriz Triangular Superior', margin, y); y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  parrafo('Definición: matriz cuadrada con todos los elementos por debajo de la diagonal principal iguales a cero.', 9);
+  parrafo('Definicion: matriz cuadrada con todos los elementos por debajo de la diagonal principal iguales a cero.', 9);
   if (state.tri) {
     try { doc.addImage(state.tri.url, 'PNG', margin, y, 40, 40, undefined, 'FAST'); } catch(e){}
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(state.tri.ok ? 0 : 200, state.tri.ok ? 130 : 0, 0);
-    doc.text(state.tri.ok ? 'Verificación: ES triangular superior' : 'Verificación: NO es triangular superior', margin + 45, y + 10);
+    doc.text(state.tri.ok ? 'Verificacion: ES triangular superior' : 'Verificacion: NO es triangular superior', margin + 45, y + 10);
     doc.setTextColor(30,30,30);
     y += 45;
   } else {
-    parrafo('No se cargó imagen para este desafío.', 9);
+    parrafo('No se cargo imagen para este desafio.', 9);
   }
 
-  // PIE
+  // ===== PIE DE PAGINA =====
   const pageCount = doc.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
     doc.setFontSize(8);
     doc.setTextColor(150,150,150);
-    doc.text(`TP N° 17 — ${nombre} — Página ${p} de ${pageCount}`, pageW/2, pageH - 8, { align: 'center' });
+    doc.text('TP N 17 - ' + ascii(nombre) + ' - Pagina ' + p + ' de ' + pageCount, pageW/2, pageH - 8, { align: 'center' });
   }
 
-  doc.save(`TP17_${nombre.replace(/\s+/g,'_')}.pdf`);
+  doc.save('TP17_' + ascii(nombre).replace(/\s+/g,'_') + '.pdf');
 };
-
 /* ================= LIMPIAR ================= */
 $('clearBtn').onclick = () => {
   if (!confirm('¿Vaciar todas las matrices y operaciones?')) return;
