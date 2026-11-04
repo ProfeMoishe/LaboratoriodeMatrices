@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Laboratorio de Matrices - Pixel Art</title>
-<!-- jsPDF para generar PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
@@ -23,7 +22,6 @@
   .card img{width:100%; image-rendering:pixelated; border-radius:6px; background:#000; aspect-ratio:1/1; object-fit:contain;}
   .card .name{font-size:.75rem; color:var(--muted); margin:6px 0; word-break:break-all;}
   .card .size{font-size:.7rem; color:var(--accent);}
-  .card .estado{font-size:.7rem; margin:4px 0; font-weight:bold;}
   .card button{width:100%; margin-top:6px; font-size:.7rem; padding:4px; border:none; border-radius:6px; cursor:pointer; background:var(--accent); color:#0f172a; font-weight:bold;}
   .card button.del{background:var(--err); color:#fff;}
   input[type=file]{display:none;}
@@ -48,7 +46,6 @@
   .msg{font-size:.8rem; color:var(--muted); margin-top:6px;}
   .definicion{background:#1e293b; border-left:4px solid var(--accent2); padding:10px 12px; border-radius:8px; font-size:.8rem; margin:10px 0; color:#cbd5e1;}
   .definicion b{color:var(--accent2);}
-  .desafio{z-index:1;}
   .desafio .zona{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px;}
   .desafio .zona img{width:70px; height:70px; image-rendering:pixelated; border-radius:6px; background:#000; object-fit:contain; border:2px solid #475569;}
   .desafio .zona .estado{font-size:.8rem; font-weight:bold;}
@@ -59,15 +56,27 @@
   .lista-verif{list-style:none; margin:10px 0; padding:0;}
   .lista-verif li{padding:6px 0; font-size:.9rem; display:flex; justify-content:space-between; border-bottom:1px dashed #334155;}
   .lista-verif li:last-child{border:none;}
-  @media(max-width:480px){ h1{font-size:1.1rem} .card .name{font-size:.65rem} }
+  .op-card{background:#0f172a; border-radius:10px; padding:12px; margin-top:10px; border:1px solid #334155;}
+  .op-card h4{font-size:.9rem; color:var(--accent); margin-bottom:8px;}
+  .op-card .op-body{display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start;}
+  .op-card .op-img{text-align:center;}
+  .op-card .op-img img{width:100%; max-width:200px; image-rendering:pixelated; border-radius:6px; background:#000; border:1px solid #475569;}
+  .op-card .op-img .cap{font-size:.7rem; color:var(--muted); margin-top:4px;}
+  .op-card .op-mat{overflow:auto;}
+  @media(max-width:600px){ .op-card .op-body{grid-template-columns:1fr;} }
+  .op-card .op-err{color:var(--err); font-weight:bold; font-size:.85rem;}
+  .fecha{background:#7c2d12; color:#fdba74; padding:4px 10px; border-radius:6px; font-size:.8rem; display:inline-block; margin-top:4px;}
+  .op-card .op-imgs-extra{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; font-size:.7rem; color:var(--muted);}
+  .op-card .op-imgs-extra img{width:55px; height:55px; image-rendering:pixelated; border-radius:6px; background:#000; border:1px solid #334155;}
 </style>
 </head>
 <body>
 
 <h1>🧮 Laboratorio de Matrices — Pixel Art</h1>
-<p class="sub">TP N° 17 · Cargá tus imágenes, clasificalas, operá y generá tu informe en PDF.</p>
+<p class="sub">TP N° 17 · Cargá tus imágenes, clasificalas, operá 3 veces y generá tu informe en PDF.</p>
+<p class="sub"><span class="fecha">📅 Entrega: viernes 13 de noviembre</span></p>
 
-<!-- ========== CARGA ========== -->
+<!-- CARGA -->
 <div class="panel">
   <h2>1. Cargar imágenes (máx. 5)</h2>
   <div class="row">
@@ -81,7 +90,7 @@
   <p class="hint">Se convierten a matriz de grises (promedio R,G,B). Deben ser 16×16, 25×25 o 32×32.</p>
 </div>
 
-<!-- ========== VISOR ========== -->
+<!-- VISOR -->
 <div class="panel">
   <h2>2. Ver matriz de una imagen</h2>
   <div class="row">
@@ -91,7 +100,7 @@
   <div class="result" id="viewResult"><span class="hint">Sin datos.</span></div>
 </div>
 
-<!-- ========== VERIFICACIONES ========== -->
+<!-- VERIFICACIONES -->
 <div class="panel">
   <h2>3. Clasificar / verificar propiedades</h2>
   <div class="row">
@@ -101,9 +110,9 @@
   <div class="result" id="checkResult"><span class="hint">Sin datos.</span></div>
 </div>
 
-<!-- ========== OPERACIONES ========== -->
+<!-- OPERACIONES -->
 <div class="panel">
-  <h2>4. Operar con matrices</h2>
+  <h2>4. Operar con matrices <span style="font-size:.8rem;color:var(--muted);font-weight:normal">(necesitás al menos 3 operaciones)</span></h2>
   <div class="row">
     <select id="opSel">
       <option value="">— elegí operación —</option>
@@ -119,20 +128,20 @@
     <input type="number" id="escalar" value="2" step="0.5" style="width:80px;" title="Escalar k">
   </div>
   <div class="row">
-    <button class="btn" id="opBtn">⚙️ Calcular</button>
+    <button class="btn" id="opBtn">⚙️ Calcular y guardar operación</button>
     <span class="msg" id="opCountMsg">0 operaciones realizadas</span>
   </div>
-  <div class="result" id="opResult"><span class="hint">Sin operación.</span></div>
+
+  <div id="opsList"><p class="hint">Aún no realizaste operaciones.</p></div>
 </div>
 
-<!-- ========== BUZÓN DE DESAFÍOS ========== -->
+<!-- BUZÓN -->
 <div class="panel desafio">
   <h2>5. Buzón de Desafíos Creativos</h2>
 
-  <!-- DIAGONAL -->
   <h3>🔷 Desafío A — Matriz Diagonal</h3>
   <div class="definicion">
-    <b>Definición recordatoria:</b> Una matriz es <b>diagonal</b> si es cuadrada y <b>todos los elementos fuera de la diagonal principal son cero</b>. Es decir, el píxel (i, j) con i ≠ j debe ser negro (0). En la diagonal principal (i = j) podés poner el valor que quieras: blanco, gris o negro.
+    <b>Definición recordatoria:</b> Una matriz es <b>diagonal</b> si es cuadrada y <b>todos los elementos fuera de la diagonal principal son cero</b>. Es decir, el píxel (i, j) con i ≠ j debe ser negro (0). En la diagonal principal (i = j) podés poner el valor que quieras.
   </div>
   <div class="zona">
     <label class="btn">📤 Cargar imagen diagonal
@@ -142,7 +151,6 @@
     <span class="estado estado-pend" id="estadoDiag">Pendiente: sin cargar</span>
   </div>
 
-  <!-- TRIANGULAR SUPERIOR -->
   <h3>🔶 Desafío B — Matriz Triangular Superior</h3>
   <div class="definicion">
     <b>Definición recordatoria:</b> Una matriz es <b>triangular superior</b> si es cuadrada y <b>todos los elementos por debajo de la diagonal principal son cero</b>. Es decir, el píxel (i, j) con i > j debe ser negro (0). Arriba y en la diagonal podés poner lo que quieras.
@@ -155,10 +163,10 @@
     <span class="estado estado-pend" id="estadoTri">Pendiente: sin cargar</span>
   </div>
 
-  <p class="hint">💡 Usá blanco puro (255) y negro puro (0). La app verifica automáticamente al cargar. Si no cumple, te lo avisa y podés volver a intentar.</p>
+  <p class="hint">💡 Usá blanco puro (255) y negro puro (0). La app verifica automáticamente al cargar.</p>
 </div>
 
-<!-- ========== GENERAR PDF ========== -->
+<!-- PDF -->
 <div class="panel final">
   <h2>6. Generar informe PDF</h2>
   <div class="row">
@@ -167,8 +175,8 @@
   </div>
 
   <ul class="lista-verif" id="verifList">
-    <li><span>Cargaste al menos 5 imágenes</span><span id="v1" class="err">✘</span></li>
-    <li><span>Realizaste al menos 1 operación</span><span id="v2" class="err">✘</span></li>
+    <li><span>Cargaste 5 imágenes</span><span id="v1" class="err">✘</span></li>
+    <li><span>Realizaste al menos 3 operaciones</span><span id="v2" class="err">✘</span></li>
     <li><span>Cargaste la matriz Diagonal del Desafío A</span><span id="v3" class="err">✘</span></li>
     <li><span>Cargaste la matriz Triangular Superior del Desafío B</span><span id="v4" class="err">✘</span></li>
     <li><span>Escribiste tu nombre</span><span id="v5" class="err">✘</span></li>
@@ -177,20 +185,41 @@
   <div class="row">
     <button class="btn ok" id="pdfBtn" disabled>📄 Generar informe PDF</button>
   </div>
-  <p class="hint">El PDF incluye: tus datos, las imágenes ampliadas, las matrices, las operaciones con resultados, los informes de clasificación y los dos desafíos.</p>
+  <p class="hint">El PDF incluye: tus datos, fecha de entrega, imágenes ampliadas, matrices, las 3 operaciones con matriz + imagen del resultado, informes de clasificación y los dos desafíos.</p>
 </div>
 
 <script>
 /* ================= ESTADO ================= */
 const MAX = 5;
+const MIN_OPS = 3;
+const FECHA_ENTREGA = 'Viernes 13 de noviembre';
 const state = {
-  matrices: [],       // {id, name, size, data, url}
-  operaciones: [],    // {tipo, titulo, A, B, k, data, error}
-  diag: null,         // {name, size, data, url, ok}
-  tri: null           // {name, size, data, url, ok}
+  matrices: [],
+  operaciones: [],
+  diag: null,
+  tri: null
 };
 let nextId = 1;
 const $ = id => document.getElementById(id);
+
+/* ================= CONVERSIÓN MATRIZ → IMAGEN ================= */
+function matrixToImageURL(matrix, cellPx = 16) {
+  const n = matrix.length, m = matrix[0].length;
+  const cv = document.createElement('canvas');
+  cv.width = n * cellPx;
+  cv.height = m * cellPx;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < m; j++) {
+      let v = matrix[i][j];
+      v = Math.max(0, Math.min(255, Math.round(v)));
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(j * cellPx, i * cellPx, cellPx, cellPx);
+    }
+  }
+  return cv.toDataURL('image/png');
+}
 
 /* ================= CARGA DE IMÁGENES ================= */
 $('fileInput').addEventListener('change', async e => {
@@ -255,9 +284,10 @@ function cargarImg(file) {
 function renderAll() {
   renderGallery();
   renderSelects();
+  renderOpsList();
   $('countMsg').textContent = `${state.matrices.length} / ${MAX} matrices cargadas`;
   $('clearBtn').disabled = state.matrices.length === 0;
-  $('opCountMsg').textContent = `${state.operaciones.length} operaciones realizadas`;
+  $('opCountMsg').textContent = `${state.operaciones.length} operaciones realizadas (mín. ${MIN_OPS})`;
   actualizarVerif();
 }
 
@@ -295,6 +325,43 @@ function renderSelects() {
     const prev = s.value;
     s.innerHTML = `<option value="">${first}</option>` + opts;
     if ([...s.options].some(o => o.value === prev)) s.value = prev;
+  });
+}
+
+/* ================= RENDER OPERACIONES GUARDADAS ================= */
+function renderOpsList() {
+  const box = $('opsList');
+  if (!state.operaciones.length) {
+    box.innerHTML = '<p class="hint">Aún no realizaste operaciones.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  state.operaciones.forEach((op, i) => {
+    const card = document.createElement('div');
+    card.className = 'op-card';
+    let html = `<h4>Operación ${i+1}: ${op.titulo} <span style="font-size:.75rem;color:var(--muted);font-weight:normal">(${op.detalle})</span></h4>`;
+    if (op.error) {
+      html += `<p class="op-err">⚠ ${op.error}</p>`;
+    } else if (op.data) {
+      const n = op.data.length, m = op.data[0].length;
+      html += `<div class="op-body">
+        <div class="op-img">
+          <img src="${op.imgUrl}" alt="resultado">
+          <div class="cap">Imagen del resultado (${n}×${m})</div>
+        </div>
+        <div class="op-mat">
+          <div class="cap" style="font-size:.7rem;color:var(--muted);margin-bottom:4px">Matriz resultante:</div>
+          <div class="matrix-view" style="max-height:260px">${renderMatrixHTML(op.data)}</div>
+        </div>
+      </div>`;
+      // Miniaturas de las matrices de entrada
+      html += `<div class="op-imgs-extra">
+        <div><img src="${op.Aurl}" alt="A"><div>A: ${op.A}</div></div>
+        ${op.Burl ? `<div><img src="${op.Burl}" alt="B"><div>B: ${op.B}</div></div>` : ''}
+      </div>`;
+    }
+    card.innerHTML = html;
+    box.appendChild(card);
   });
 }
 
@@ -416,47 +483,49 @@ $('opBtn').onclick = () => {
   const A = getMatrix($('selA').value);
   const B = getMatrix($('selB').value);
   const k = parseFloat($('escalar').value);
-  const box = $('opResult');
 
-  if (!op) { box.innerHTML = '<span class="err">Elegí una operación.</span>'; return; }
-  if (!A) { box.innerHTML = '<span class="err">Elegí la matriz A.</span>'; return; }
+  if (!op) { alert('Elegí una operación.'); return; }
+  if (!A) { alert('Elegí la matriz A.'); return; }
 
   let res, titulo = '', detalle = '';
   if (op === 'suma') {
-    if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
+    if (!B) { alert('Elegí la matriz B.'); return; }
     res = suma(A.data, B.data); titulo = 'A + B'; detalle = `${A.name} + ${B.name}`;
   } else if (op === 'resta') {
-    if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
+    if (!B) { alert('Elegí la matriz B.'); return; }
     res = resta(A.data, B.data); titulo = 'A − B'; detalle = `${A.name} − ${B.name}`;
   } else if (op === 'escalar') {
-    if (isNaN(k)) { box.innerHTML = '<span class="err">Ingresá un escalar numérico.</span>'; return; }
+    if (isNaN(k)) { alert('Ingresá un escalar numérico.'); return; }
     res = escalar(A.data, k); titulo = `A × ${k}`; detalle = `${A.name} × ${k}`;
   } else if (op === 'mult') {
-    if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
+    if (!B) { alert('Elegí la matriz B.'); return; }
     res = mult(A.data, B.data); titulo = 'A × B'; detalle = `${A.name} × ${B.name}`;
   }
 
-  // Registrar la operación SIEMPRE (también los errores, para que quede constancia)
+  let imgUrl = null;
+  if (res.data) {
+    // Normalizar la matriz resultante para poder mostrarla como imagen
+    // (los valores pueden salirse de 0-255 después de multiplicar/multiplicar por escalar)
+    const flat = res.data.flat();
+    const maxAbs = Math.max(...flat.map(v => Math.abs(v)), 1);
+    const factor = maxAbs > 255 ? 255 / maxAbs : 1;
+    const normalized = res.data.map(r => r.map(v => Math.max(0, Math.min(255, Math.round(v * factor)))));
+    imgUrl = matrixToImageURL(normalized, 16);
+  }
+
   state.operaciones.push({
     tipo: op, titulo, detalle, k: op==='escalar'?k:null,
     A: A.name, B: B?B.name:null,
     Aurl: A.url, Burl: B?B.url:null,
-    data: res.data || null, error: res.error || null
+    data: res.data || null, error: res.error || null,
+    imgUrl
   });
 
-  if (res.error) {
-    box.innerHTML = `<span class="err">${res.error}</span>`;
-  } else {
-    const n = res.data.length;
-    const aviso = n > 25 ? `<p class="hint">Matriz grande (${n}×${res.data[0].length}); puede requerir scroll.</p>` : '';
-    box.innerHTML = `<p><b>Resultado ${titulo}</b> — ${n}×${res.data[0].length}</p>`
-      + aviso + `<div class="matrix-view">${renderMatrixHTML(res.data)}</div>`;
-  }
-  $('opCountMsg').textContent = `${state.operaciones.length} operaciones realizadas`;
-  actualizarVerif();
+  renderAll();
+  if (res.error) alert('La operación no se pudo realizar: ' + res.error);
 };
 
-/* ================= DESAFÍOS (BUZÓN) ================= */
+/* ================= DESAFÍOS ================= */
 $('fileDiag').addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
@@ -468,12 +537,8 @@ $('fileDiag').addEventListener('change', async e => {
     $('imgDiag').src = m.url;
     $('imgDiag').style.display = 'inline-block';
     const est = $('estadoDiag');
-    if (ok) {
-      est.textContent = '✔ ¡Es diagonal!'; est.className = 'estado estado-ok';
-    } else {
-      est.textContent = '✘ No es diagonal (hay valores ≠ 0 fuera de la diagonal). Volvé a intentar.';
-      est.className = 'estado estado-err';
-    }
+    if (ok) { est.textContent = '✔ ¡Es diagonal!'; est.className = 'estado estado-ok'; }
+    else { est.textContent = '✘ No es diagonal (hay valores ≠ 0 fuera de la diagonal). Volvé a intentar.'; est.className = 'estado estado-err'; }
   } catch (err) { alert(err.message); }
   e.target.value = '';
   actualizarVerif();
@@ -490,12 +555,8 @@ $('fileTri').addEventListener('change', async e => {
     $('imgTri').src = m.url;
     $('imgTri').style.display = 'inline-block';
     const est = $('estadoTri');
-    if (ok) {
-      est.textContent = '✔ ¡Es triangular superior!'; est.className = 'estado estado-ok';
-    } else {
-      est.textContent = '✘ No es triangular superior (hay valores ≠ 0 debajo de la diagonal). Volvé a intentar.';
-      est.className = 'estado estado-err';
-    }
+    if (ok) { est.textContent = '✔ ¡Es triangular superior!'; est.className = 'estado estado-ok'; }
+    else { est.textContent = '✘ No es triangular superior (hay valores ≠ 0 debajo de la diagonal). Volvé a intentar.'; est.className = 'estado estado-err'; }
   } catch (err) { alert(err.message); }
   e.target.value = '';
   actualizarVerif();
@@ -504,13 +565,14 @@ $('fileTri').addEventListener('change', async e => {
 /* ================= VERIFICACIÓN FINAL ================= */
 function actualizarVerif() {
   const v1 = state.matrices.length >= MAX;
-  const v2 = state.operaciones.length >= 1;
+  const v2 = state.operaciones.length >= MIN_OPS;
   const v3 = !!(state.diag && state.diag.ok);
   const v4 = !!(state.tri && state.tri.ok);
   const v5 = $('nombreEst').value.trim().length > 0;
   const set = (id, ok) => { const el = $(id); el.textContent = ok?'✔':'✘'; el.className = ok?'ok':'err'; };
   set('v1', v1); set('v2', v2); set('v3', v3); set('v4', v4); set('v5', v5);
   $('pdfBtn').disabled = !(v1 && v2 && v3 && v4 && v5);
+  $('opCountMsg').textContent = `${state.operaciones.length} operaciones realizadas (mín. ${MIN_OPS})`;
 }
 $('nombreEst').addEventListener('input', actualizarVerif);
 
@@ -519,11 +581,9 @@ $('pdfBtn').onclick = async () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const nombre = $('nombreEst').value.trim();
-
   const pageW = 210, pageH = 297, margin = 15;
   let y = margin;
 
-  // Helpers
   const addPageIfNeeded = (h) => {
     if (y + h > pageH - margin) { doc.addPage(); y = margin; }
   };
@@ -544,9 +604,9 @@ $('pdfBtn').onclick = async () => {
     y += 2;
   };
 
-  // --- PORTADA ---
+  // PORTADA
   doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, 40, 'F');
+  doc.rect(0, 0, pageW, 42, 'F');
   doc.setTextColor(56,189,248);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
@@ -554,17 +614,20 @@ $('pdfBtn').onclick = async () => {
   doc.setFontSize(12);
   doc.setTextColor(226,232,240);
   doc.text('Laboratorio de Matrices — Pixel Art', margin, 28);
+  doc.setFontSize(10);
+  doc.setTextColor(253,186,116);
+  doc.text('Fecha de entrega: ' + FECHA_ENTREGA, margin, 36);
   doc.setTextColor(30,30,30);
-  y = 50;
+  y = 52;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.text(`Estudiante: ${nombre}`, margin, y); y += 7;
-  doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, margin, y); y += 7;
+  doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-AR')}`, margin, y); y += 7;
   doc.text(`Matrices cargadas: ${state.matrices.length}`, margin, y); y += 7;
   doc.text(`Operaciones realizadas: ${state.operaciones.length}`, margin, y); y += 12;
 
-  // --- 1. IMÁGENES AMPLIADAS ---
+  // 1. IMÁGENES AMPLIADAS
   titulo('1. Imágenes cargadas (ampliadas)', 14);
   const imgSize = 70;
   state.matrices.forEach((m, i) => {
@@ -577,7 +640,7 @@ $('pdfBtn').onclick = async () => {
     y += imgSize + 6;
   });
 
-  // --- 2. MATRICES DE CADA IMAGEN ---
+  // 2. MATRICES NUMÉRICAS
   titulo('2. Matrices de cada imagen (grises 0–255)', 14);
   state.matrices.forEach((m, i) => {
     const n = m.size;
@@ -604,33 +667,54 @@ $('pdfBtn').onclick = async () => {
     y += n * cellH + 8;
   });
 
-  // --- 3. OPERACIONES ---
+  // 3. OPERACIONES
   titulo('3. Operaciones realizadas y resultados', 14);
   if (!state.operaciones.length) {
     parrafo('No se registraron operaciones.');
   } else {
     state.operaciones.forEach((op, i) => {
-      addPageIfNeeded(20);
+      addPageIfNeeded(30);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text(`Operación ${i+1}: ${op.titulo} (${op.detalle})`, margin, y);
+      doc.setFontSize(11);
+      doc.text(`Operación ${i+1}: ${op.titulo}`, margin, y);
       y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Detalle: ${op.detalle}`, margin, y);
+      y += 6;
+
       if (op.error) {
-        doc.setFont('helvetica', 'normal');
         doc.setTextColor(200,0,0);
         doc.text('Error: ' + op.error, margin, y);
         doc.setTextColor(30,30,30);
         y += 6;
       } else if (op.data) {
         const n = op.data.length, mm = op.data[0].length;
-        const cellW = Math.min(7, (pageW - 2*margin - 10) / mm);
+
+        // --- IMAGEN AMPLIADA DEL RESULTADO ---
+        const imgOpSize = Math.min(60, 140 / 2);
+        try {
+          doc.addImage(op.imgUrl, 'PNG', margin, y, imgOpSize, imgOpSize, undefined, 'FAST');
+          doc.setFontSize(7);
+          doc.setTextColor(120,120,120);
+          doc.text(`Imagen del resultado (${n}×${mm})`, margin, y + imgOpSize + 3);
+          doc.setTextColor(30,30,30);
+        } catch(e){}
+
+        // --- MATRIZ NUMÉRICA AL LADO ---
+        const cellW = Math.min(5, (pageW - 2*margin - imgOpSize - 10) / mm);
         const cellH = cellW;
-        addPageIfNeeded(n * cellH + 6);
-        doc.setFontSize(Math.max(4, cellW * 0.6));
+        doc.setFontSize(Math.max(3.5, cellW * 0.6));
+        const matX = margin + imgOpSize + 8;
+        const matY = y;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text('Matriz resultante:', matX, matY - 1);
+        doc.setFontSize(Math.max(3.5, cellW * 0.6));
         for (let r = 0; r < n; r++) {
           for (let c = 0; c < mm; c++) {
-            const x = margin + c * cellW;
-            const yy = y + r * cellH;
+            const x = matX + c * cellW;
+            const yy = matY + 2 + r * cellH;
             doc.rect(x, yy, cellW, cellH);
             const v = op.data[r][c];
             const txt = Number.isInteger(v) ? String(v) : v.toFixed(1);
@@ -638,12 +722,13 @@ $('pdfBtn').onclick = async () => {
             doc.text(txt, x + (cellW - tw)/2, yy + cellH*0.7);
           }
         }
-        y += n * cellH + 8;
+        const blockH = Math.max(imgOpSize + 6, n * cellH + 4);
+        y += blockH + 6;
       }
     });
   }
 
-  // --- 4. INFORMES DE CLASIFICACIÓN ---
+  // 4. INFORMES DE CLASIFICACIÓN
   titulo('4. Informes de clasificación de cada imagen', 14);
   state.matrices.forEach((m, i) => {
     addPageIfNeeded(40);
@@ -663,19 +748,17 @@ $('pdfBtn').onclick = async () => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     checks.forEach(([n, ok]) => {
-      const sym = ok ? 'SI' : 'NO';
       doc.setTextColor(ok ? 0 : 150, ok ? 130 : 0, 0);
-      doc.text(`• ${n}: ${sym}`, margin + 4, y);
+      doc.text(`• ${n}: ${ok ? 'SI' : 'NO'}`, margin + 4, y);
       doc.setTextColor(30,30,30);
       y += 4.5;
     });
     y += 3;
   });
 
-  // --- 5. DESAFÍOS ---
+  // 5. DESAFÍOS
   titulo('5. Desafíos creativos', 14);
 
-  // Diagonal
   addPageIfNeeded(30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -694,7 +777,6 @@ $('pdfBtn').onclick = async () => {
     parrafo('No se cargó imagen para este desafío.', 9);
   }
 
-  // Triangular superior
   addPageIfNeeded(30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -713,7 +795,7 @@ $('pdfBtn').onclick = async () => {
     parrafo('No se cargó imagen para este desafío.', 9);
   }
 
-  // --- PIE ---
+  // PIE
   const pageCount = doc.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
@@ -737,7 +819,6 @@ $('clearBtn').onclick = () => {
   renderAll();
   $('viewResult').innerHTML = '<span class="hint">Sin datos.</span>';
   $('checkResult').innerHTML = '<span class="hint">Sin datos.</span>';
-  $('opResult').innerHTML = '<span class="hint">Sin operación.</span>';
 };
 
 renderAll();
