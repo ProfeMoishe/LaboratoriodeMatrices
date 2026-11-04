@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Laboratorio de Matrices - Pixel Art</title>
+<!-- jsPDF para generar PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --accent:#38bdf8;
@@ -13,6 +15,7 @@
   body{background:var(--bg); color:var(--txt); padding:16px; line-height:1.5;}
   h1{font-size:1.4rem; text-align:center; color:var(--accent); margin-bottom:4px;}
   h2{font-size:1.1rem; color:var(--accent2); margin:18px 0 10px; border-bottom:1px solid #334155; padding-bottom:4px;}
+  h3{font-size:.95rem; color:var(--accent); margin:10px 0 6px;}
   .sub{text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:16px;}
   .panel{background:var(--panel); border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,.3);}
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;}
@@ -20,6 +23,7 @@
   .card img{width:100%; image-rendering:pixelated; border-radius:6px; background:#000; aspect-ratio:1/1; object-fit:contain;}
   .card .name{font-size:.75rem; color:var(--muted); margin:6px 0; word-break:break-all;}
   .card .size{font-size:.7rem; color:var(--accent);}
+  .card .estado{font-size:.7rem; margin:4px 0; font-weight:bold;}
   .card button{width:100%; margin-top:6px; font-size:.7rem; padding:4px; border:none; border-radius:6px; cursor:pointer; background:var(--accent); color:#0f172a; font-weight:bold;}
   .card button.del{background:var(--err); color:#fff;}
   input[type=file]{display:none;}
@@ -27,33 +31,45 @@
   .btn:hover{filter:brightness(1.15);}
   .btn.alt{background:var(--accent2); color:#0f172a;}
   .btn.ghost{background:transparent; border:1px solid #475569; color:var(--txt);}
+  .btn.ok{background:var(--ok); color:#fff;}
   .btn:disabled{opacity:.4; cursor:not-allowed;}
   .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:10px 0;}
   select{padding:8px; border-radius:8px; background:var(--panel2); color:var(--txt); border:1px solid #475569; font-size:.85rem; flex:1; min-width:120px;}
+  input[type=text], input[type=number]{padding:8px; border-radius:8px; background:var(--panel2); color:var(--txt); border:1px solid #475569; font-size:.85rem;}
   .matrix-view{overflow:auto; margin-top:10px;}
   table.matrix{border-collapse:collapse; margin:auto; font-size:.55rem; font-family:monospace;}
   table.matrix td{border:1px solid #334155; padding:2px 3px; text-align:center; min-width:22px; color:#cbd5e1;}
   .result{background:var(--panel2); border-radius:10px; padding:12px; margin-top:12px; min-height:60px; overflow:auto;}
   .ok{color:var(--ok); font-weight:bold;}
   .err{color:var(--err); font-weight:bold;}
-  .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; margin:2px; background:#334155;}
-  .badge.ok{background:#14532d; color:#86efac;}
-  .badge.err{background:#450a0a; color:#fca5a5;}
   .checks{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:6px; margin-top:8px;}
   .check{background:var(--panel2); padding:6px 10px; border-radius:8px; font-size:.78rem; display:flex; justify-content:space-between;}
   .hint{font-size:.75rem; color:var(--muted); margin-top:6px;}
   .msg{font-size:.8rem; color:var(--muted); margin-top:6px;}
+  .definicion{background:#1e293b; border-left:4px solid var(--accent2); padding:10px 12px; border-radius:8px; font-size:.8rem; margin:10px 0; color:#cbd5e1;}
+  .definicion b{color:var(--accent2);}
+  .desafio{z-index:1;}
+  .desafio .zona{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px;}
+  .desafio .zona img{width:70px; height:70px; image-rendering:pixelated; border-radius:6px; background:#000; object-fit:contain; border:2px solid #475569;}
+  .desafio .zona .estado{font-size:.8rem; font-weight:bold;}
+  .estado-pend{color:var(--muted);}
+  .estado-ok{color:var(--ok);}
+  .estado-err{color:var(--err);}
+  .final{background:linear-gradient(135deg,#1e293b,#273449); border:2px solid var(--accent2);}
+  .lista-verif{list-style:none; margin:10px 0; padding:0;}
+  .lista-verif li{padding:6px 0; font-size:.9rem; display:flex; justify-content:space-between; border-bottom:1px dashed #334155;}
+  .lista-verif li:last-child{border:none;}
   @media(max-width:480px){ h1{font-size:1.1rem} .card .name{font-size:.65rem} }
 </style>
 </head>
 <body>
 
 <h1>🧮 Laboratorio de Matrices — Pixel Art</h1>
-<p class="sub">Cargá hasta 5 imágenes (16×16, 25×25 o 32×32). Se convierten a matriz de grises (promedio) para trabajar.</p>
+<p class="sub">TP N° 17 · Cargá tus imágenes, clasificalas, operá y generá tu informe en PDF.</p>
 
-<!-- CARGA -->
+<!-- ========== CARGA ========== -->
 <div class="panel">
-  <h2>1. Cargar imágenes</h2>
+  <h2>1. Cargar imágenes (máx. 5)</h2>
   <div class="row">
     <label class="btn">➕ Cargar imagen
       <input type="file" id="fileInput" accept="image/*" multiple>
@@ -62,10 +78,10 @@
     <span class="msg" id="countMsg">0 / 5 matrices cargadas</span>
   </div>
   <div class="grid" id="gallery"></div>
-  <p class="hint">Tocá el nombre de una imagen para seleccionarla en los operadores de abajo.</p>
+  <p class="hint">Se convierten a matriz de grises (promedio R,G,B). Deben ser 16×16, 25×25 o 32×32.</p>
 </div>
 
-<!-- VISOR -->
+<!-- ========== VISOR ========== -->
 <div class="panel">
   <h2>2. Ver matriz de una imagen</h2>
   <div class="row">
@@ -75,7 +91,7 @@
   <div class="result" id="viewResult"><span class="hint">Sin datos.</span></div>
 </div>
 
-<!-- VERIFICACIONES -->
+<!-- ========== VERIFICACIONES ========== -->
 <div class="panel">
   <h2>3. Clasificar / verificar propiedades</h2>
   <div class="row">
@@ -85,10 +101,9 @@
   <div class="result" id="checkResult"><span class="hint">Sin datos.</span></div>
 </div>
 
-<!-- OPERACIONES -->
+<!-- ========== OPERACIONES ========== -->
 <div class="panel">
   <h2>4. Operar con matrices</h2>
-
   <div class="row">
     <select id="opSel">
       <option value="">— elegí operación —</option>
@@ -98,26 +113,83 @@
       <option value="mult">Multiplicación (A × B)</option>
     </select>
   </div>
-
   <div class="row">
     <select id="selA"><option value="">Matriz A</option></select>
     <select id="selB"><option value="">Matriz B</option></select>
-    <input type="number" id="escalar" value="2" step="0.5" style="width:80px; padding:8px; border-radius:8px; background:var(--panel2); color:var(--txt); border:1px solid #475569;" title="Escalar k">
+    <input type="number" id="escalar" value="2" step="0.5" style="width:80px;" title="Escalar k">
   </div>
-
   <div class="row">
     <button class="btn" id="opBtn">⚙️ Calcular</button>
+    <span class="msg" id="opCountMsg">0 operaciones realizadas</span>
+  </div>
+  <div class="result" id="opResult"><span class="hint">Sin operación.</span></div>
+</div>
+
+<!-- ========== BUZÓN DE DESAFÍOS ========== -->
+<div class="panel desafio">
+  <h2>5. Buzón de Desafíos Creativos</h2>
+
+  <!-- DIAGONAL -->
+  <h3>🔷 Desafío A — Matriz Diagonal</h3>
+  <div class="definicion">
+    <b>Definición recordatoria:</b> Una matriz es <b>diagonal</b> si es cuadrada y <b>todos los elementos fuera de la diagonal principal son cero</b>. Es decir, el píxel (i, j) con i ≠ j debe ser negro (0). En la diagonal principal (i = j) podés poner el valor que quieras: blanco, gris o negro.
+  </div>
+  <div class="zona">
+    <label class="btn">📤 Cargar imagen diagonal
+      <input type="file" id="fileDiag" accept="image/*">
+    </label>
+    <img id="imgDiag" style="display:none" alt="diagonal">
+    <span class="estado estado-pend" id="estadoDiag">Pendiente: sin cargar</span>
   </div>
 
-  <div class="result" id="opResult"><span class="hint">Sin operación.</span></div>
+  <!-- TRIANGULAR SUPERIOR -->
+  <h3>🔶 Desafío B — Matriz Triangular Superior</h3>
+  <div class="definicion">
+    <b>Definición recordatoria:</b> Una matriz es <b>triangular superior</b> si es cuadrada y <b>todos los elementos por debajo de la diagonal principal son cero</b>. Es decir, el píxel (i, j) con i > j debe ser negro (0). Arriba y en la diagonal podés poner lo que quieras.
+  </div>
+  <div class="zona">
+    <label class="btn">📤 Cargar imagen triangular superior
+      <input type="file" id="fileTri" accept="image/*">
+    </label>
+    <img id="imgTri" style="display:none" alt="triangular superior">
+    <span class="estado estado-pend" id="estadoTri">Pendiente: sin cargar</span>
+  </div>
+
+  <p class="hint">💡 Usá blanco puro (255) y negro puro (0). La app verifica automáticamente al cargar. Si no cumple, te lo avisa y podés volver a intentar.</p>
+</div>
+
+<!-- ========== GENERAR PDF ========== -->
+<div class="panel final">
+  <h2>6. Generar informe PDF</h2>
+  <div class="row">
+    <label>Nombre y apellido:</label>
+    <input type="text" id="nombreEst" placeholder="Ej: Ana Pérez" style="flex:1; min-width:180px;">
+  </div>
+
+  <ul class="lista-verif" id="verifList">
+    <li><span>Cargaste al menos 5 imágenes</span><span id="v1" class="err">✘</span></li>
+    <li><span>Realizaste al menos 1 operación</span><span id="v2" class="err">✘</span></li>
+    <li><span>Cargaste la matriz Diagonal del Desafío A</span><span id="v3" class="err">✘</span></li>
+    <li><span>Cargaste la matriz Triangular Superior del Desafío B</span><span id="v4" class="err">✘</span></li>
+    <li><span>Escribiste tu nombre</span><span id="v5" class="err">✘</span></li>
+  </ul>
+
+  <div class="row">
+    <button class="btn ok" id="pdfBtn" disabled>📄 Generar informe PDF</button>
+  </div>
+  <p class="hint">El PDF incluye: tus datos, las imágenes ampliadas, las matrices, las operaciones con resultados, los informes de clasificación y los dos desafíos.</p>
 </div>
 
 <script>
 /* ================= ESTADO ================= */
 const MAX = 5;
-const state = { matrices: [] }; // {id, name, size, data: [[..]], img}
+const state = {
+  matrices: [],       // {id, name, size, data, url}
+  operaciones: [],    // {tipo, titulo, A, B, k, data, error}
+  diag: null,         // {name, size, data, url, ok}
+  tri: null           // {name, size, data, url, ok}
+};
 let nextId = 1;
-
 const $ = id => document.getElementById(id);
 
 /* ================= CARGA DE IMÁGENES ================= */
@@ -142,38 +214,30 @@ $('fileInput').addEventListener('change', async e => {
 
 async function procesarImagen(file) {
   const img = await cargarImg(file);
-  // Detectar tamaño natural (cuadrado)
-  const n = img.width; // asumimos cuadrado
+  const n = img.width;
   if (![16,25,32].includes(n)) throw new Error('La imagen debe ser 16, 25 o 32 px de lado (es de ' + n + ').');
   if (img.width !== img.height) throw new Error('La imagen debe ser cuadrada.');
-
-  // Dibujar en canvas y leer píxeles
   const cv = document.createElement('canvas');
   cv.width = cv.height = n;
   const ctx = cv.getContext('2d', { willReadFrequently: true });
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, 0, 0, n, n);
   const px = ctx.getImageData(0, 0, n, n).data;
-
   const data = [];
   for (let i = 0; i < n; i++) {
     const row = [];
     for (let j = 0; j < n; j++) {
       const idx = (i * n + j) * 4;
       const r = px[idx], g = px[idx+1], b = px[idx+2], a = px[idx+3];
-      // si es transparente, tratar como 0
       const gray = a === 0 ? 0 : Math.round(0.299*r + 0.587*g + 0.114*b);
       row.push(gray);
     }
     data.push(row);
   }
-
   return {
     id: nextId++,
     name: file.name.replace(/\.[^.]+$/, ''),
-    size: n,
-    data,
-    url: cv.toDataURL()
+    size: n, data, url: cv.toDataURL()
   };
 }
 
@@ -193,6 +257,8 @@ function renderAll() {
   renderSelects();
   $('countMsg').textContent = `${state.matrices.length} / ${MAX} matrices cargadas`;
   $('clearBtn').disabled = state.matrices.length === 0;
+  $('opCountMsg').textContent = `${state.operaciones.length} operaciones realizadas`;
+  actualizarVerif();
 }
 
 function renderGallery() {
@@ -233,13 +299,9 @@ function renderSelects() {
 }
 
 /* ================= UTILIDADES MATRICES ================= */
-function getMatrix(id) {
-  return state.matrices.find(m => m.id === Number(id)) || null;
-}
-function sameSize(A, B) {
-  return A.length === B.length && A[0].length === B[0].length;
-}
-function renderMatrixHTML(A, highlight = false) {
+function getMatrix(id) { return state.matrices.find(m => m.id === Number(id)) || null; }
+function sameSize(A,B){ return A.length===B.length && A[0].length===B[0].length; }
+function renderMatrixHTML(A) {
   const n = A.length, m = A[0].length;
   let html = '<table class="matrix">';
   for (let i = 0; i < n; i++) {
@@ -250,8 +312,7 @@ function renderMatrixHTML(A, highlight = false) {
     }
     html += '</tr>';
   }
-  html += '</table>';
-  return html;
+  return html + '</table>';
 }
 function isSquare(A){ return A.length === A[0].length; }
 function isNull(A){ return A.every(r => r.every(v => v === 0)); }
@@ -293,30 +354,22 @@ function isSymmetric(A){
   return true;
 }
 function transpose(A){
-  const n = A.length, m = A[0].length;
+  const n=A.length, m=A[0].length;
   const T = Array.from({length:m}, () => Array(n).fill(0));
   for (let i=0;i<n;i++) for (let j=0;j<m;j++) T[j][i] = A[i][j];
   return T;
 }
-function suma(A,B){
-  if (!sameSize(A,B)) return {error:'Las matrices deben tener el mismo tamaño.'};
-  return {data: A.map((r,i) => r.map((v,j) => v + B[i][j]))};
-}
-function resta(A,B){
-  if (!sameSize(A,B)) return {error:'Las matrices deben tener el mismo tamaño.'};
-  return {data: A.map((r,i) => r.map((v,j) => v - B[i][j]))};
-}
-function escalar(A,k){
-  return {data: A.map(r => r.map(v => v * k))};
-}
+function suma(A,B){ if(!sameSize(A,B)) return {error:'Las matrices deben tener el mismo tamaño.'}; return {data:A.map((r,i)=>r.map((v,j)=>v+B[i][j]))}; }
+function resta(A,B){ if(!sameSize(A,B)) return {error:'Las matrices deben tener el mismo tamaño.'}; return {data:A.map((r,i)=>r.map((v,j)=>v-B[i][j]))}; }
+function escalar(A,k){ return {data:A.map(r=>r.map(v=>v*k))}; }
 function mult(A,B){
-  const n = A.length, m = A[0].length, p = B[0].length;
+  const n=A.length, m=A[0].length, p=B[0].length;
   if (m !== B.length) return {error:`No se puede multiplicar: columnas de A (${m}) ≠ filas de B (${B.length}).`};
   const C = Array.from({length:n}, () => Array(p).fill(0));
   for (let i=0;i<n;i++) for (let j=0;j<p;j++){
-    let s = 0;
-    for (let k=0;k<m;k++) s += A[i][k] * B[k][j];
-    C[i][j] = s;
+    let s=0;
+    for (let k=0;k<m;k++) s += A[i][k]*B[k][j];
+    C[i][j]=s;
   }
   return {data:C};
 }
@@ -335,7 +388,6 @@ $('checkBtn').onclick = () => {
   const m = getMatrix($('checkSel').value);
   const box = $('checkResult');
   if (!m) { box.innerHTML = '<span class="err">Elegí una matriz válida.</span>'; return; }
-
   const checks = [
     ['Cuadrada', isSquare(m.data)],
     ['Nula', isNull(m.data)],
@@ -343,17 +395,13 @@ $('checkBtn').onclick = () => {
     ['Diagonal', isDiagonal(m.data)],
     ['Triangular superior', isUpperTriangular(m.data)],
     ['Triangular inferior', isLowerTriangular(m.data)],
-    ['Simétrica', isSymmetric(m.data)],
-    ['Traspuesta = original', isSymmetric(m.data)] // equivalente a simétrica
+    ['Simétrica', isSymmetric(m.data)]
   ];
-
   let html = `<p><b>${m.name}</b> — ${m.size}×${m.size}</p><div class="checks">`;
-  checks.forEach(([nombre, ok]) => {
-    html += `<div class="check"><span>${nombre}</span><span class="${ok?'ok':'err'}">${ok?'✔ Sí':'✘ No'}</span></div>`;
+  checks.forEach(([n, ok]) => {
+    html += `<div class="check"><span>${n}</span><span class="${ok?'ok':'err'}">${ok?'✔ Sí':'✘ No'}</span></div>`;
   });
   html += '</div>';
-
-  // Mostrar traspuesta si NO es simétrica (para que comparen)
   if (isSquare(m.data) && !isSymmetric(m.data)) {
     const T = transpose(m.data);
     html += `<p class="hint" style="margin-top:12px">Traspuesta (para comparar):</p>`
@@ -373,39 +421,319 @@ $('opBtn').onclick = () => {
   if (!op) { box.innerHTML = '<span class="err">Elegí una operación.</span>'; return; }
   if (!A) { box.innerHTML = '<span class="err">Elegí la matriz A.</span>'; return; }
 
-  let res, titulo = '';
+  let res, titulo = '', detalle = '';
   if (op === 'suma') {
     if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
-    res = suma(A.data, B.data); titulo = `A + B`;
+    res = suma(A.data, B.data); titulo = 'A + B'; detalle = `${A.name} + ${B.name}`;
   } else if (op === 'resta') {
     if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
-    res = resta(A.data, B.data); titulo = `A − B`;
+    res = resta(A.data, B.data); titulo = 'A − B'; detalle = `${A.name} − ${B.name}`;
   } else if (op === 'escalar') {
     if (isNaN(k)) { box.innerHTML = '<span class="err">Ingresá un escalar numérico.</span>'; return; }
-    res = escalar(A.data, k); titulo = `A × ${k}`;
+    res = escalar(A.data, k); titulo = `A × ${k}`; detalle = `${A.name} × ${k}`;
   } else if (op === 'mult') {
     if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
-    res = mult(A.data, B.data); titulo = `A × B`;
+    res = mult(A.data, B.data); titulo = 'A × B'; detalle = `${A.name} × ${B.name}`;
   }
+
+  // Registrar la operación SIEMPRE (también los errores, para que quede constancia)
+  state.operaciones.push({
+    tipo: op, titulo, detalle, k: op==='escalar'?k:null,
+    A: A.name, B: B?B.name:null,
+    Aurl: A.url, Burl: B?B.url:null,
+    data: res.data || null, error: res.error || null
+  });
 
   if (res.error) {
     box.innerHTML = `<span class="err">${res.error}</span>`;
-    return;
+  } else {
+    const n = res.data.length;
+    const aviso = n > 25 ? `<p class="hint">Matriz grande (${n}×${res.data[0].length}); puede requerir scroll.</p>` : '';
+    box.innerHTML = `<p><b>Resultado ${titulo}</b> — ${n}×${res.data[0].length}</p>`
+      + aviso + `<div class="matrix-view">${renderMatrixHTML(res.data)}</div>`;
+  }
+  $('opCountMsg').textContent = `${state.operaciones.length} operaciones realizadas`;
+  actualizarVerif();
+};
+
+/* ================= DESAFÍOS (BUZÓN) ================= */
+$('fileDiag').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const m = await procesarImagen(file);
+    const ok = isDiagonal(m.data);
+    m.ok = ok;
+    state.diag = m;
+    $('imgDiag').src = m.url;
+    $('imgDiag').style.display = 'inline-block';
+    const est = $('estadoDiag');
+    if (ok) {
+      est.textContent = '✔ ¡Es diagonal!'; est.className = 'estado estado-ok';
+    } else {
+      est.textContent = '✘ No es diagonal (hay valores ≠ 0 fuera de la diagonal). Volvé a intentar.';
+      est.className = 'estado estado-err';
+    }
+  } catch (err) { alert(err.message); }
+  e.target.value = '';
+  actualizarVerif();
+});
+
+$('fileTri').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const m = await procesarImagen(file);
+    const ok = isUpperTriangular(m.data);
+    m.ok = ok;
+    state.tri = m;
+    $('imgTri').src = m.url;
+    $('imgTri').style.display = 'inline-block';
+    const est = $('estadoTri');
+    if (ok) {
+      est.textContent = '✔ ¡Es triangular superior!'; est.className = 'estado estado-ok';
+    } else {
+      est.textContent = '✘ No es triangular superior (hay valores ≠ 0 debajo de la diagonal). Volvé a intentar.';
+      est.className = 'estado estado-err';
+    }
+  } catch (err) { alert(err.message); }
+  e.target.value = '';
+  actualizarVerif();
+});
+
+/* ================= VERIFICACIÓN FINAL ================= */
+function actualizarVerif() {
+  const v1 = state.matrices.length >= MAX;
+  const v2 = state.operaciones.length >= 1;
+  const v3 = !!(state.diag && state.diag.ok);
+  const v4 = !!(state.tri && state.tri.ok);
+  const v5 = $('nombreEst').value.trim().length > 0;
+  const set = (id, ok) => { const el = $(id); el.textContent = ok?'✔':'✘'; el.className = ok?'ok':'err'; };
+  set('v1', v1); set('v2', v2); set('v3', v3); set('v4', v4); set('v5', v5);
+  $('pdfBtn').disabled = !(v1 && v2 && v3 && v4 && v5);
+}
+$('nombreEst').addEventListener('input', actualizarVerif);
+
+/* ================= GENERAR PDF ================= */
+$('pdfBtn').onclick = async () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const nombre = $('nombreEst').value.trim();
+
+  const pageW = 210, pageH = 297, margin = 15;
+  let y = margin;
+
+  // Helpers
+  const addPageIfNeeded = (h) => {
+    if (y + h > pageH - margin) { doc.addPage(); y = margin; }
+  };
+  const titulo = (txt, size = 14, color = [56,189,248]) => {
+    addPageIfNeeded(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    doc.text(txt, margin, y);
+    y += size * 0.5 + 3;
+    doc.setTextColor(30,30,30);
+  };
+  const parrafo = (txt, size = 10) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(txt, pageW - 2*margin);
+    lines.forEach(l => { addPageIfNeeded(6); doc.text(l, margin, y); y += size * 0.45; });
+    y += 2;
+  };
+
+  // --- PORTADA ---
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageW, 40, 'F');
+  doc.setTextColor(56,189,248);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Informe TP N° 17', margin, 20);
+  doc.setFontSize(12);
+  doc.setTextColor(226,232,240);
+  doc.text('Laboratorio de Matrices — Pixel Art', margin, 28);
+  doc.setTextColor(30,30,30);
+  y = 50;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Estudiante: ${nombre}`, margin, y); y += 7;
+  doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, margin, y); y += 7;
+  doc.text(`Matrices cargadas: ${state.matrices.length}`, margin, y); y += 7;
+  doc.text(`Operaciones realizadas: ${state.operaciones.length}`, margin, y); y += 12;
+
+  // --- 1. IMÁGENES AMPLIADAS ---
+  titulo('1. Imágenes cargadas (ampliadas)', 14);
+  const imgSize = 70;
+  state.matrices.forEach((m, i) => {
+    addPageIfNeeded(imgSize + 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`${i+1}. ${m.name} (${m.size}×${m.size})`, margin, y);
+    y += 3;
+    try { doc.addImage(m.url, 'PNG', margin, y, imgSize, imgSize, undefined, 'FAST'); } catch(e){}
+    y += imgSize + 6;
+  });
+
+  // --- 2. MATRICES DE CADA IMAGEN ---
+  titulo('2. Matrices de cada imagen (grises 0–255)', 14);
+  state.matrices.forEach((m, i) => {
+    const n = m.size;
+    const cellW = Math.min(7, (pageW - 2*margin - 10) / n);
+    const cellH = cellW;
+    const totalH = n * cellH + 15;
+    addPageIfNeeded(totalH);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`Matriz ${i+1}: ${m.name} (${n}×${n})`, margin, y);
+    y += 4;
+    doc.setFontSize(Math.max(4, cellW * 0.6));
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const x = margin + c * cellW;
+        const yy = y + r * cellH;
+        doc.rect(x, yy, cellW, cellH);
+        const v = m.data[r][c];
+        const txt = String(v);
+        const tw = doc.getTextWidth(txt);
+        doc.text(txt, x + (cellW - tw)/2, yy + cellH*0.7);
+      }
+    }
+    y += n * cellH + 8;
+  });
+
+  // --- 3. OPERACIONES ---
+  titulo('3. Operaciones realizadas y resultados', 14);
+  if (!state.operaciones.length) {
+    parrafo('No se registraron operaciones.');
+  } else {
+    state.operaciones.forEach((op, i) => {
+      addPageIfNeeded(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text(`Operación ${i+1}: ${op.titulo} (${op.detalle})`, margin, y);
+      y += 5;
+      if (op.error) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(200,0,0);
+        doc.text('Error: ' + op.error, margin, y);
+        doc.setTextColor(30,30,30);
+        y += 6;
+      } else if (op.data) {
+        const n = op.data.length, mm = op.data[0].length;
+        const cellW = Math.min(7, (pageW - 2*margin - 10) / mm);
+        const cellH = cellW;
+        addPageIfNeeded(n * cellH + 6);
+        doc.setFontSize(Math.max(4, cellW * 0.6));
+        for (let r = 0; r < n; r++) {
+          for (let c = 0; c < mm; c++) {
+            const x = margin + c * cellW;
+            const yy = y + r * cellH;
+            doc.rect(x, yy, cellW, cellH);
+            const v = op.data[r][c];
+            const txt = Number.isInteger(v) ? String(v) : v.toFixed(1);
+            const tw = doc.getTextWidth(txt);
+            doc.text(txt, x + (cellW - tw)/2, yy + cellH*0.7);
+          }
+        }
+        y += n * cellH + 8;
+      }
+    });
   }
 
-  // Para matrices grandes, avisar
-  const n = res.data.length;
-  const aviso = n > 25 ? `<p class="hint">Matriz grande (${n}×${res.data[0].length}); puede requerir scroll horizontal.</p>` : '';
+  // --- 4. INFORMES DE CLASIFICACIÓN ---
+  titulo('4. Informes de clasificación de cada imagen', 14);
+  state.matrices.forEach((m, i) => {
+    addPageIfNeeded(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`Imagen ${i+1}: ${m.name} (${m.size}×${m.size})`, margin, y);
+    y += 5;
+    const checks = [
+      ['Cuadrada', isSquare(m.data)],
+      ['Nula', isNull(m.data)],
+      ['Identidad', isIdentity(m.data)],
+      ['Diagonal', isDiagonal(m.data)],
+      ['Triangular superior', isUpperTriangular(m.data)],
+      ['Triangular inferior', isLowerTriangular(m.data)],
+      ['Simétrica', isSymmetric(m.data)]
+    ];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    checks.forEach(([n, ok]) => {
+      const sym = ok ? 'SI' : 'NO';
+      doc.setTextColor(ok ? 0 : 150, ok ? 130 : 0, 0);
+      doc.text(`• ${n}: ${sym}`, margin + 4, y);
+      doc.setTextColor(30,30,30);
+      y += 4.5;
+    });
+    y += 3;
+  });
 
-  box.innerHTML = `<p><b>Resultado ${titulo}</b> — ${n}×${res.data[0].length}</p>`
-    + aviso
-    + `<div class="matrix-view">${renderMatrixHTML(res.data)}</div>`;
+  // --- 5. DESAFÍOS ---
+  titulo('5. Desafíos creativos', 14);
+
+  // Diagonal
+  addPageIfNeeded(30);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Desafío A — Matriz Diagonal', margin, y); y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  parrafo('Definición: matriz cuadrada con todos los elementos fuera de la diagonal principal iguales a cero.', 9);
+  if (state.diag) {
+    try { doc.addImage(state.diag.url, 'PNG', margin, y, 40, 40, undefined, 'FAST'); } catch(e){}
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(state.diag.ok ? 0 : 200, state.diag.ok ? 130 : 0, 0);
+    doc.text(state.diag.ok ? 'Verificación: ES diagonal' : 'Verificación: NO es diagonal', margin + 45, y + 10);
+    doc.setTextColor(30,30,30);
+    y += 45;
+  } else {
+    parrafo('No se cargó imagen para este desafío.', 9);
+  }
+
+  // Triangular superior
+  addPageIfNeeded(30);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Desafío B — Matriz Triangular Superior', margin, y); y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  parrafo('Definición: matriz cuadrada con todos los elementos por debajo de la diagonal principal iguales a cero.', 9);
+  if (state.tri) {
+    try { doc.addImage(state.tri.url, 'PNG', margin, y, 40, 40, undefined, 'FAST'); } catch(e){}
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(state.tri.ok ? 0 : 200, state.tri.ok ? 130 : 0, 0);
+    doc.text(state.tri.ok ? 'Verificación: ES triangular superior' : 'Verificación: NO es triangular superior', margin + 45, y + 10);
+    doc.setTextColor(30,30,30);
+    y += 45;
+  } else {
+    parrafo('No se cargó imagen para este desafío.', 9);
+  }
+
+  // --- PIE ---
+  const pageCount = doc.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFontSize(8);
+    doc.setTextColor(150,150,150);
+    doc.text(`TP N° 17 — ${nombre} — Página ${p} de ${pageCount}`, pageW/2, pageH - 8, { align: 'center' });
+  }
+
+  doc.save(`TP17_${nombre.replace(/\s+/g,'_')}.pdf`);
 };
 
 /* ================= LIMPIAR ================= */
 $('clearBtn').onclick = () => {
-  if (!confirm('¿Vaciar todas las matrices cargadas?')) return;
+  if (!confirm('¿Vaciar todas las matrices y operaciones?')) return;
   state.matrices = [];
+  state.operaciones = [];
+  state.diag = null; state.tri = null;
+  $('imgDiag').style.display = 'none'; $('imgTri').style.display = 'none';
+  $('estadoDiag').textContent = 'Pendiente: sin cargar'; $('estadoDiag').className = 'estado estado-pend';
+  $('estadoTri').textContent = 'Pendiente: sin cargar'; $('estadoTri').className = 'estado estado-pend';
   renderAll();
   $('viewResult').innerHTML = '<span class="hint">Sin datos.</span>';
   $('checkResult').innerHTML = '<span class="hint">Sin datos.</span>';
