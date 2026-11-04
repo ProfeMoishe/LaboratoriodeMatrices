@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio de Matrices - Pixel Art</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --accent:#38bdf8;
+    --accent2:#a78bfa; --ok:#22c55e; --err:#ef4444; --txt:#e2e8f0; --muted:#94a3b8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  body{background:var(--bg); color:var(--txt); padding:16px; line-height:1.5;}
+  h1{font-size:1.4rem; text-align:center; color:var(--accent); margin-bottom:4px;}
+  h2{font-size:1.1rem; color:var(--accent2); margin:18px 0 10px; border-bottom:1px solid #334155; padding-bottom:4px;}
+  .sub{text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:16px;}
+  .panel{background:var(--panel); border-radius:12px; padding:16px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;}
+  .card{background:var(--panel2); border-radius:10px; padding:10px; text-align:center; position:relative;}
+  .card img{width:100%; image-rendering:pixelated; border-radius:6px; background:#000; aspect-ratio:1/1; object-fit:contain;}
+  .card .name{font-size:.75rem; color:var(--muted); margin:6px 0; word-break:break-all;}
+  .card .size{font-size:.7rem; color:var(--accent);}
+  .card button{width:100%; margin-top:6px; font-size:.7rem; padding:4px; border:none; border-radius:6px; cursor:pointer; background:var(--accent); color:#0f172a; font-weight:bold;}
+  .card button.del{background:var(--err); color:#fff;}
+  input[type=file]{display:none;}
+  .btn{display:inline-block; padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:.85rem; background:var(--accent); color:#0f172a; transition:.2s;}
+  .btn:hover{filter:brightness(1.15);}
+  .btn.alt{background:var(--accent2); color:#0f172a;}
+  .btn.ghost{background:transparent; border:1px solid #475569; color:var(--txt);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:10px 0;}
+  select{padding:8px; border-radius:8px; background:var(--panel2); color:var(--txt); border:1px solid #475569; font-size:.85rem; flex:1; min-width:120px;}
+  .matrix-view{overflow:auto; margin-top:10px;}
+  table.matrix{border-collapse:collapse; margin:auto; font-size:.55rem; font-family:monospace;}
+  table.matrix td{border:1px solid #334155; padding:2px 3px; text-align:center; min-width:22px; color:#cbd5e1;}
+  .result{background:var(--panel2); border-radius:10px; padding:12px; margin-top:12px; min-height:60px; overflow:auto;}
+  .ok{color:var(--ok); font-weight:bold;}
+  .err{color:var(--err); font-weight:bold;}
+  .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; margin:2px; background:#334155;}
+  .badge.ok{background:#14532d; color:#86efac;}
+  .badge.err{background:#450a0a; color:#fca5a5;}
+  .checks{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:6px; margin-top:8px;}
+  .check{background:var(--panel2); padding:6px 10px; border-radius:8px; font-size:.78rem; display:flex; justify-content:space-between;}
+  .hint{font-size:.75rem; color:var(--muted); margin-top:6px;}
+  .msg{font-size:.8rem; color:var(--muted); margin-top:6px;}
+  @media(max-width:480px){ h1{font-size:1.1rem} .card .name{font-size:.65rem} }
+</style>
+</head>
+<body>
+
+<h1>🧮 Laboratorio de Matrices — Pixel Art</h1>
+<p class="sub">Cargá hasta 5 imágenes (16×16, 25×25 o 32×32). Se convierten a matriz de grises (promedio) para trabajar.</p>
+
+<!-- CARGA -->
+<div class="panel">
+  <h2>1. Cargar imágenes</h2>
+  <div class="row">
+    <label class="btn">➕ Cargar imagen
+      <input type="file" id="fileInput" accept="image/*" multiple>
+    </label>
+    <button class="btn ghost" id="clearBtn" disabled>🗑️ Vaciar todo</button>
+    <span class="msg" id="countMsg">0 / 5 matrices cargadas</span>
+  </div>
+  <div class="grid" id="gallery"></div>
+  <p class="hint">Tocá el nombre de una imagen para seleccionarla en los operadores de abajo.</p>
+</div>
+
+<!-- VISOR -->
+<div class="panel">
+  <h2>2. Ver matriz de una imagen</h2>
+  <div class="row">
+    <select id="viewSel"><option value="">— elegí una matriz —</option></select>
+    <button class="btn" id="showBtn">👁️ Mostrar matriz</button>
+  </div>
+  <div class="result" id="viewResult"><span class="hint">Sin datos.</span></div>
+</div>
+
+<!-- VERIFICACIONES -->
+<div class="panel">
+  <h2>3. Clasificar / verificar propiedades</h2>
+  <div class="row">
+    <select id="checkSel"><option value="">— elegí una matriz —</option></select>
+    <button class="btn alt" id="checkBtn">🔍 Analizar</button>
+  </div>
+  <div class="result" id="checkResult"><span class="hint">Sin datos.</span></div>
+</div>
+
+<!-- OPERACIONES -->
+<div class="panel">
+  <h2>4. Operar con matrices</h2>
+
+  <div class="row">
+    <select id="opSel">
+      <option value="">— elegí operación —</option>
+      <option value="suma">Suma (A + B)</option>
+      <option value="resta">Resta (A − B)</option>
+      <option value="escalar">Producto por escalar (A × k)</option>
+      <option value="mult">Multiplicación (A × B)</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <select id="selA"><option value="">Matriz A</option></select>
+    <select id="selB"><option value="">Matriz B</option></select>
+    <input type="number" id="escalar" value="2" step="0.5" style="width:80px; padding:8px; border-radius:8px; background:var(--panel2); color:var(--txt); border:1px solid #475569;" title="Escalar k">
+  </div>
+
+  <div class="row">
+    <button class="btn" id="opBtn">⚙️ Calcular</button>
+  </div>
+
+  <div class="result" id="opResult"><span class="hint">Sin operación.</span></div>
+</div>
+
+<script>
+/* ================= ESTADO ================= */
+const MAX = 5;
+const state = { matrices: [] }; // {id, name, size, data: [[..]], img}
+let nextId = 1;
+
+const $ = id => document.getElementById(id);
+
+/* ================= CARGA DE IMÁGENES ================= */
+$('fileInput').addEventListener('change', async e => {
+  const files = [...e.target.files];
+  if (state.matrices.length + files.length > MAX) {
+    alert(`Solo podés cargar hasta ${MAX} matrices.`);
+    return;
+  }
+  for (const file of files) {
+    try {
+      const m = await procesarImagen(file);
+      state.matrices.push(m);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo procesar: ' + file.name + '\n' + err.message);
+    }
+  }
+  e.target.value = '';
+  renderAll();
+});
+
+async function procesarImagen(file) {
+  const img = await cargarImg(file);
+  // Detectar tamaño natural (cuadrado)
+  const n = img.width; // asumimos cuadrado
+  if (![16,25,32].includes(n)) throw new Error('La imagen debe ser 16, 25 o 32 px de lado (es de ' + n + ').');
+  if (img.width !== img.height) throw new Error('La imagen debe ser cuadrada.');
+
+  // Dibujar en canvas y leer píxeles
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = n;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, n, n);
+  const px = ctx.getImageData(0, 0, n, n).data;
+
+  const data = [];
+  for (let i = 0; i < n; i++) {
+    const row = [];
+    for (let j = 0; j < n; j++) {
+      const idx = (i * n + j) * 4;
+      const r = px[idx], g = px[idx+1], b = px[idx+2], a = px[idx+3];
+      // si es transparente, tratar como 0
+      const gray = a === 0 ? 0 : Math.round(0.299*r + 0.587*g + 0.114*b);
+      row.push(gray);
+    }
+    data.push(row);
+  }
+
+  return {
+    id: nextId++,
+    name: file.name.replace(/\.[^.]+$/, ''),
+    size: n,
+    data,
+    url: cv.toDataURL()
+  };
+}
+
+function cargarImg(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => { URL.revokeObjectURL(url); res(im); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Imagen inválida')); };
+    im.src = url;
+  });
+}
+
+/* ================= RENDER ================= */
+function renderAll() {
+  renderGallery();
+  renderSelects();
+  $('countMsg').textContent = `${state.matrices.length} / ${MAX} matrices cargadas`;
+  $('clearBtn').disabled = state.matrices.length === 0;
+}
+
+function renderGallery() {
+  const g = $('gallery');
+  g.innerHTML = '';
+  if (!state.matrices.length) {
+    g.innerHTML = '<p class="hint">Todavía no cargaste imágenes.</p>';
+    return;
+  }
+  state.matrices.forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = `
+      <img src="${m.url}" alt="${m.name}">
+      <div class="name" title="${m.name}">${m.name}</div>
+      <div class="size">${m.size}×${m.size}</div>
+      <button class="del" data-id="${m.id}">Quitar</button>
+    `;
+    d.querySelector('.del').onclick = () => {
+      state.matrices = state.matrices.filter(x => x.id !== m.id);
+      renderAll();
+    };
+    g.appendChild(d);
+  });
+}
+
+function renderSelects() {
+  const opts = state.matrices.map(m =>
+    `<option value="${m.id}">${m.name} (${m.size}×${m.size})</option>`
+  ).join('');
+  ['viewSel','checkSel','selA','selB'].forEach(id => {
+    const s = $(id);
+    const first = id === 'selA' ? 'Matriz A' : id === 'selB' ? 'Matriz B' : '— elegí una matriz —';
+    const prev = s.value;
+    s.innerHTML = `<option value="">${first}</option>` + opts;
+    if ([...s.options].some(o => o.value === prev)) s.value = prev;
+  });
+}
+
+/* ================= UTILIDADES MATRICES ================= */
+function getMatrix(id) {
+  return state.matrices.find(m => m.id === Number(id)) || null;
+}
+function sameSize(A, B) {
+  return A.length === B.length && A[0].length === B[0].length;
+}
+function renderMatrixHTML(A, highlight = false) {
+  const n = A.length, m = A[0].length;
+  let html = '<table class="matrix">';
+  for (let i = 0; i < n; i++) {
+    html += '<tr>';
+    for (let j = 0; j < m; j++) {
+      const v = A[i][j];
+      html += `<td>${Number.isInteger(v) ? v : v.toFixed(1)}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  return html;
+}
+function isSquare(A){ return A.length === A[0].length; }
+function isNull(A){ return A.every(r => r.every(v => v === 0)); }
+function isIdentity(A){
+  if (!isSquare(A)) return false;
+  const n = A.length;
+  for (let i=0;i<n;i++) for (let j=0;j<n;j++){
+    if (i===j && A[i][j] !== 1) return false;
+    if (i!==j && A[i][j] !== 0) return false;
+  }
+  return true;
+}
+function isDiagonal(A){
+  if (!isSquare(A)) return false;
+  const n = A.length;
+  for (let i=0;i<n;i++) for (let j=0;j<n;j++)
+    if (i!==j && A[i][j] !== 0) return false;
+  return true;
+}
+function isUpperTriangular(A){
+  if (!isSquare(A)) return false;
+  const n = A.length;
+  for (let i=0;i<n;i++) for (let j=0;j<i;j++)
+    if (A[i][j] !== 0) return false;
+  return true;
+}
+function isLowerTriangular(A){
+  if (!isSquare(A)) return false;
+  const n = A.length;
+  for (let i=0;i<n;i++) for (let j=i+1;j<n;j++)
+    if (A[i][j] !== 0) return false;
+  return true;
+}
+function isSymmetric(A){
+  if (!isSquare(A)) return false;
+  const n = A.length;
+  for (let i=0;i<n;i++) for (let j=0;j<n;j++)
+    if (A[i][j] !== A[j][i]) return false;
+  return true;
+}
+function transpose(A){
+  const n = A.length, m = A[0].length;
+  const T = Array.from({length:m}, () => Array(n).fill(0));
+  for (let i=0;i<n;i++) for (let j=0;j<m;j++) T[j][i] = A[i][j];
+  return T;
+}
+function suma(A,B){
+  if (!sameSize(A,B)) return {error:'Las matrices deben tener el mismo tamaño.'};
+  return {data: A.map((r,i) => r.map((v,j) => v + B[i][j]))};
+}
+function resta(A,B){
+  if (!sameSize(A,B)) return {error:'Las matrices deben tener el mismo tamaño.'};
+  return {data: A.map((r,i) => r.map((v,j) => v - B[i][j]))};
+}
+function escalar(A,k){
+  return {data: A.map(r => r.map(v => v * k))};
+}
+function mult(A,B){
+  const n = A.length, m = A[0].length, p = B[0].length;
+  if (m !== B.length) return {error:`No se puede multiplicar: columnas de A (${m}) ≠ filas de B (${B.length}).`};
+  const C = Array.from({length:n}, () => Array(p).fill(0));
+  for (let i=0;i<n;i++) for (let j=0;j<p;j++){
+    let s = 0;
+    for (let k=0;k<m;k++) s += A[i][k] * B[k][j];
+    C[i][j] = s;
+  }
+  return {data:C};
+}
+
+/* ================= VISOR ================= */
+$('showBtn').onclick = () => {
+  const m = getMatrix($('viewSel').value);
+  const box = $('viewResult');
+  if (!m) { box.innerHTML = '<span class="err">Elegí una matriz válida.</span>'; return; }
+  box.innerHTML = `<p><b>${m.name}</b> — ${m.size}×${m.size} (valores de gris 0–255)</p>`
+    + `<div class="matrix-view">${renderMatrixHTML(m.data)}</div>`;
+};
+
+/* ================= VERIFICACIONES ================= */
+$('checkBtn').onclick = () => {
+  const m = getMatrix($('checkSel').value);
+  const box = $('checkResult');
+  if (!m) { box.innerHTML = '<span class="err">Elegí una matriz válida.</span>'; return; }
+
+  const checks = [
+    ['Cuadrada', isSquare(m.data)],
+    ['Nula', isNull(m.data)],
+    ['Identidad', isIdentity(m.data)],
+    ['Diagonal', isDiagonal(m.data)],
+    ['Triangular superior', isUpperTriangular(m.data)],
+    ['Triangular inferior', isLowerTriangular(m.data)],
+    ['Simétrica', isSymmetric(m.data)],
+    ['Traspuesta = original', isSymmetric(m.data)] // equivalente a simétrica
+  ];
+
+  let html = `<p><b>${m.name}</b> — ${m.size}×${m.size}</p><div class="checks">`;
+  checks.forEach(([nombre, ok]) => {
+    html += `<div class="check"><span>${nombre}</span><span class="${ok?'ok':'err'}">${ok?'✔ Sí':'✘ No'}</span></div>`;
+  });
+  html += '</div>';
+
+  // Mostrar traspuesta si NO es simétrica (para que comparen)
+  if (isSquare(m.data) && !isSymmetric(m.data)) {
+    const T = transpose(m.data);
+    html += `<p class="hint" style="margin-top:12px">Traspuesta (para comparar):</p>`
+      + `<div class="matrix-view">${renderMatrixHTML(T)}</div>`;
+  }
+  box.innerHTML = html;
+};
+
+/* ================= OPERACIONES ================= */
+$('opBtn').onclick = () => {
+  const op = $('opSel').value;
+  const A = getMatrix($('selA').value);
+  const B = getMatrix($('selB').value);
+  const k = parseFloat($('escalar').value);
+  const box = $('opResult');
+
+  if (!op) { box.innerHTML = '<span class="err">Elegí una operación.</span>'; return; }
+  if (!A) { box.innerHTML = '<span class="err">Elegí la matriz A.</span>'; return; }
+
+  let res, titulo = '';
+  if (op === 'suma') {
+    if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
+    res = suma(A.data, B.data); titulo = `A + B`;
+  } else if (op === 'resta') {
+    if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
+    res = resta(A.data, B.data); titulo = `A − B`;
+  } else if (op === 'escalar') {
+    if (isNaN(k)) { box.innerHTML = '<span class="err">Ingresá un escalar numérico.</span>'; return; }
+    res = escalar(A.data, k); titulo = `A × ${k}`;
+  } else if (op === 'mult') {
+    if (!B) { box.innerHTML = '<span class="err">Elegí la matriz B.</span>'; return; }
+    res = mult(A.data, B.data); titulo = `A × B`;
+  }
+
+  if (res.error) {
+    box.innerHTML = `<span class="err">${res.error}</span>`;
+    return;
+  }
+
+  // Para matrices grandes, avisar
+  const n = res.data.length;
+  const aviso = n > 25 ? `<p class="hint">Matriz grande (${n}×${res.data[0].length}); puede requerir scroll horizontal.</p>` : '';
+
+  box.innerHTML = `<p><b>Resultado ${titulo}</b> — ${n}×${res.data[0].length}</p>`
+    + aviso
+    + `<div class="matrix-view">${renderMatrixHTML(res.data)}</div>`;
+};
+
+/* ================= LIMPIAR ================= */
+$('clearBtn').onclick = () => {
+  if (!confirm('¿Vaciar todas las matrices cargadas?')) return;
+  state.matrices = [];
+  renderAll();
+  $('viewResult').innerHTML = '<span class="hint">Sin datos.</span>';
+  $('checkResult').innerHTML = '<span class="hint">Sin datos.</span>';
+  $('opResult').innerHTML = '<span class="hint">Sin operación.</span>';
+};
+
+renderAll();
+</script>
+</body>
+</html>
